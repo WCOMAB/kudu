@@ -22,6 +22,7 @@
 
 using System;
 using System.Net;
+using System.Threading;
 using System.Web;
 using Kudu.Contracts.Infrastructure;
 using Kudu.Contracts.Settings;
@@ -54,6 +55,7 @@ namespace Kudu.Services.GitServer
 
         public override void ProcessRequestBase(HttpContextBase context)
         {
+            Console.WriteLine("ReceivePackHandler.ProcessRequestBase");
             using (Tracer.Step("RpcService.ReceivePack"))
             {
                 // Ensure that the target directory does not have a non-Git repository.
@@ -65,11 +67,15 @@ namespace Kudu.Services.GitServer
                     {
                         context.ApplicationInstance.CompleteRequest();
                     }
+
+                    Console.WriteLine("ReceivePackHandler.ProcessRequestBase | Exit 1 | Repo.Type {0}", repository.RepositoryType);
                     return;
                 }
 
+                Console.WriteLine("1 ReceivePackHandler.ProcessRequestBase | DeploymentLock.TryLockOperation | IsHeld {0} -- expectin to false", DeploymentLock.IsHeld);
                 bool acquired = DeploymentLock.TryLockOperation(() =>
                 {
+                    Console.WriteLine("2 ReceivePackHandler.ProcessRequestBase | DeploymentLock.TryLockOperation | IsHeld {0} -- expectin to true", DeploymentLock.IsHeld);
                     context.Response.ContentType = "application/x-git-receive-pack-result";
 
                     if (_autoSwapHandler.IsAutoSwapOngoing())
@@ -77,6 +83,8 @@ namespace Kudu.Services.GitServer
                         context.Response.StatusCode = (int)HttpStatusCode.Conflict;
                         context.Response.Write(Resources.Error_AutoSwapDeploymentOngoing);
                         context.ApplicationInstance.CompleteRequest();
+
+                        Console.WriteLine("ReceivePackHandler.ProcessRequestBase | Exit 2 | AutoSwap Enabled");
                         return;
                     }
 
@@ -86,20 +94,24 @@ namespace Kudu.Services.GitServer
                         GitServer.SetDeployer(username);
                     }
 
+                    Console.WriteLine("ReceivePackHandler.ProcessRequestBase | username {0}", username);
                     UpdateNoCacheForResponse(context.Response);
 
                     // This temporary deployment is for ui purposes only, it will always be deleted via finally.
                     ChangeSet tempChangeSet;
                     using (DeploymentManager.CreateTemporaryDeployment(Resources.ReceivingChanges, out tempChangeSet))
                     {
+                        Console.WriteLine("ReceivePackHandler.ProcessRequestBase | CreateTemporaryDeployment done");
                         GitServer.Receive(context.Request.GetInputStream(), context.Response.OutputStream);
                     }
-
                     // TODO: Currently we do not support auto-swap for git push due to an issue where we already sent the headers at the
                     // beginning of the deployment and cannot flag at this point to make the auto swap (by sending the proper headers).
                     //_autoSwapHandler.HandleAutoSwap(verifyActiveDeploymentIdChanged: true);
+                    Console.WriteLine("3 ReceivePackHandler.ProcessRequestBase | DeploymentLock.TryLockOperation | IsHeld {0} -- expectin to true", DeploymentLock.IsHeld);
                 }, TimeSpan.Zero);
 
+                //Console.WriteLine("ReceivePackHandler.ProcessRequestBase | acquired: {0}", acquired);
+                Console.WriteLine("4 ReceivePackHandler.ProcessRequestBase | DeploymentLock.TryLockOperation | IsHeld {0} -- expectin to false", DeploymentLock.IsHeld);
                 if (!acquired)
                 {
                     context.Response.StatusCode = 409;

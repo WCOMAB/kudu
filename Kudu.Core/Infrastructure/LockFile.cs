@@ -68,46 +68,54 @@ namespace Kudu.Core.Infrastructure
         {
             get
             {
-                // If there's no file then there's no process holding onto it
-                if (!FileSystemHelpers.FileExists(_path))
-                {
-                    return false;
-                }
+                // TODO: file locking amount process doesn`t work, use FileExists as work around for now.
+                return FileSystemHelpers.FileExists(_path);
 
-                try
-                {
-                    // If there is a file, lets see if someone has an open handle to it, or if it's
-                    // just hanging there for no reason
-                    using (FileSystemHelpers.OpenFile(_path, FileMode.Open, FileAccess.Write, FileShare.Read)) { }
-                }
-                catch (UnauthorizedAccessException)
-                {
-                    // if it is ReadOnly file system, we will skip the lock
-                    // which will enable all read action
-                    // for write action, it will fail with UnauthorizedAccessException when perform actual write operation
-                    //      There is one drawback, previously for write action, even acquire lock will fail with UnauthorizedAccessException,
-                    //      there will be retry within given timeout. so if exception is temporary, previous`s implementation will still go thru.
-                    //      While right now will end up failure. But it is a extreem edge case, should be ok to ignore.
-                    try
-                    {
-                        return !FileSystemHelpers.IsFileSystemReadOnly();
-                    }
-                    catch
-                    {
-                        return true;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    TraceIfUnknown(ex);
-                    return true;
-                }
+                ////// If there's no file then there's no process holding onto it
+                ////if (!FileSystemHelpers.FileExists(_path))
+                ////{
+                ////    Console.WriteLine("1 LockIsHeld false, file exists {0}: {1}  @ {2}", File.Exists(_path), _path, DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff tt"));
+                ////    return false;
+                ////}
 
-                // cleanup inactive lock file.  technically, it is not needed
-                // we just want to see the lock folder is clean, if no active lock.
-                DeleteFileSafe();
+                ////try
+                ////{
+                ////    // If there is a file, lets see if someone has an open handle to it, or if it's
+                ////    // just hanging there for no reason
+                ////    using (FileSystemHelpers.OpenFile(_path, FileMode.Open, FileAccess.Write, FileShare.Read)) { }
+                ////}
+                ////catch (UnauthorizedAccessException)
+                ////{
+                ////    // if it is ReadOnly file system, we will skip the lock
+                ////    // which will enable all read action
+                ////    // for write action, it will fail with UnauthorizedAccessException when perform actual write operation
+                ////    //      There is one drawback, previously for write action, even acquire lock will fail with UnauthorizedAccessException,
+                ////    //      there will be retry within given timeout. so if exception is temporary, previous`s implementation will still go thru.
+                ////    //      While right now will end up failure. But it is a extreem edge case, should be ok to ignore.
+                ////    try
+                ////    {
+                ////        var result = !FileSystemHelpers.IsFileSystemReadOnly();
+                ////        Console.WriteLine("2 LockIsHeld {3}, file exists {0}: {1}  @ {2}", File.Exists(_path), _path, DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff tt"), result);
+                ////        return result;
+                ////    }
+                ////    catch
+                ////    {
+                ////        Console.WriteLine("3 LockIsHeld true, file exists {0}: {1}  @ {2}", File.Exists(_path), _path, DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff tt"));
+                ////        return true;
+                ////    }
+                ////}
+                ////catch (Exception ex)
+                ////{
+                ////    Console.WriteLine("4 LockIsHeld true, file exists {0}: {1}  @ {2}", File.Exists(_path), _path, DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff tt"));
+                ////    TraceIfUnknown(ex);
+                ////    return true;
+                ////}
 
-                return false;
+                ////// cleanup inactive lock file.  technically, it is not needed
+                ////// we just want to see the lock folder is clean, if no active lock.
+                ////DeleteFileSafe();
+                ////Console.WriteLine("5 LockIsHeld false, file exists {0}: {1}  @ {2}", File.Exists(_path), _path, DateTime.Now.ToString("MM/dd/yyyy hh:mm:ss.fff tt"));
+                ////return false;
             }
         }
 
