@@ -177,7 +177,7 @@ fi" + "\n";
                     sb.AppendLine("#!/bin/sh");
                     sb.AppendLine("read i");
                     sb.AppendLine("echo $i > pushinfo");
-                    sb.AppendLine(KnownEnvironment.KUDUCOMMAND);
+                    sb.AppendLine("/usr/bin/mono " + KnownEnvironment.KUDUCOMMAND);
                     File.WriteAllText(PostReceiveHookPath, sb.ToString().Replace("\r\n", "\n"));
                 }
 
