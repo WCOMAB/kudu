@@ -1,0 +1,13 @@
+version: 1.0.{build}
+os: Visual Studio 2015
+init:
+- cmd:
+cache: packages -> **\packages.config
+build_script:
+  - ps: .\build.ps1 -Target AppVeyor
+test: off
+artifacts:
+- path: artifacts\Release\KuduWeb
+  name: KuduWeb
+- path: artifacts\Release\SiteExtensions\Kudu
+  name: Kudu.Services.Web
