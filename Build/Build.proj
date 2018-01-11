@@ -15,29 +15,29 @@
         <ClientSiteProject>$(ProjectRoot)\Kudu.Web\Kudu.Web.csproj</ClientSiteProject>
         <TestResultsPath>$(ArtifactsPath)\TestResults</TestResultsPath>
     </PropertyGroup>
-    
+
     <PropertyGroup>
         <MajorVersion>53</MajorVersion>
         <!-- Ensure that we come up with a new version every 65535 years -->
-        <VersionStartYear>2012</VersionStartYear>
-        
+        <VersionStartYear>2013</VersionStartYear>
+
         <!-- Build number is of the format (CurrentYear - VersionStartYear + 1)(2 digit month)(2 digit day) -->
         <MinorVersion>$([MSBuild]::Add(1, $([MSBuild]::Subtract($([System.DateTime]::UtcNow.Year), $(VersionStartYear)))))$([System.DateTime]::UtcNow.ToString("MMdd"))</MinorVersion>
         <Build>$(BUILD_NUMBER)</Build>
         <Version>$(MajorVersion).$(MinorVersion).$(Build)</Version>
     </PropertyGroup>
-    
+
    <ItemGroup>
         <RegexTransform Include="$(ProjectRoot)\Common\CommonAssemblyInfo.cs">
             <Find>\d+\.\d+\.\d+\.\d+</Find>
             <ReplaceWith>$(Version)</ReplaceWith>
         </RegexTransform>
     </ItemGroup>
-    
+
     <Target Name="UpdateVersion" Condition="'$(BUILD_NUMBER)' != ''">
         <RegexTransform Items="@(RegexTransform)" />
     </Target>
-    
+
     <Target Name="RunAll" DependsOnTargets="UpdateVersion; RestorePackages; Build; ReportFxCopResults; RunTests; BuildSites; BuildZips; CopySymbols; BuildNuget" />
 
     <Target Name="CreateOutputPath">
@@ -46,12 +46,12 @@
     </Target>
 
     <Target Name="BuildSites">
-        <MSBuild Projects="$(ServiceSiteProject)" 
-                 Targets="pipelinePreDeployCopyAllFilesToOneFolder" 
+        <MSBuild Projects="$(ServiceSiteProject)"
+                 Targets="pipelinePreDeployCopyAllFilesToOneFolder"
                  Properties="_PackageTempDir=$(ServiceSiteTargetPath);
                              AutoParameterizationWebConfigConnectionStrings=false;
                              SolutionDir=$(ProjectRoot)\;"/>
-        
+
         <ItemGroup>
             <ServiceSiteFilesToCopy Include="$(ProjectRoot)\Kudu.Services.Web\bin*\node_modules*\**\*.*" />
             <ServiceSiteFilesToCopy Include="$(ProjectRoot)\Kudu.Services.Web\commit.txt" />
@@ -59,48 +59,48 @@
             <ServiceSiteFilesToCopy Include="$(ProjectRoot)\Kudu.Services.Web\bin*\Kudu.exe" />
             <ServiceSiteFilesToCopy Include="$(ProjectRoot)\Kudu.Services.Web\bin*\Scripts\*" />
         </ItemGroup>
-        
-        <Copy SourceFiles="%(ServiceSiteFilesToCopy.FullPath)" DestinationFiles="$(ServiceSiteTargetPath)\%(RecursiveDir)%(Filename)%(Extension)" 
+
+        <Copy SourceFiles="%(ServiceSiteFilesToCopy.FullPath)" DestinationFiles="$(ServiceSiteTargetPath)\%(RecursiveDir)%(Filename)%(Extension)"
                 SkipUnchangedFiles="true" />
 
-        <MSBuild Projects="$(ClientSiteProject)" 
-                 Targets="pipelinePreDeployCopyAllFilesToOneFolder" 
+        <MSBuild Projects="$(ClientSiteProject)"
+                 Targets="pipelinePreDeployCopyAllFilesToOneFolder"
                  Properties="_PackageTempDir=$(ClientSiteTargetPath);
                              AutoParameterizationWebConfigConnectionStrings=false;
                              SolutionDir=$(ProjectRoot)\;"/>
     </Target>
-  
+
     <Target Name="RunTests" DependsOnTargets="CreateOutputPath">
-        <MsBuild Projects="Build.xunit.targets" Targets="_RunTests" 
+        <MsBuild Projects="Build.xunit.targets" Targets="_RunTests"
                   Properties="Assembly=$(ProjectRoot)\Kudu.Core.Test\bin\$(Configuration)\Kudu.Core.Test.dll;Xml=$(TestResultsPath)\Kudu.Core.Test.XunitResults.xml" />
-        <MsBuild Projects="Build.xunit.targets" Targets="_RunTests" 
+        <MsBuild Projects="Build.xunit.targets" Targets="_RunTests"
                   Properties="Assembly=$(ProjectRoot)\Kudu.Services.Test\bin\$(Configuration)\Kudu.Services.Test.dll;Xml=$(TestResultsPath)\Kudu.Services.Test.XunitResults.xml" />
     </Target>
-    
+
     <Target Name="RunFunctionalTests" DependsOnTargets="CreateOutputPath">
-        <MsBuild Projects="Build.xunit.targets" Targets="_RunTests" 
+        <MsBuild Projects="Build.xunit.targets" Targets="_RunTests"
                   Properties="Assembly=$(ProjectRoot)\Kudu.FunctionalTests\bin\$(Configuration)\Kudu.FunctionalTests.dll;Xml=$(TestResultsPath)\Kudu.FunctionalTests.XunitResults.xml" />
     </Target>
-    
+
     <Target Name="Build" DependsOnTargets="CreateOutputPath">
-        <MSBuild Projects="$(ProjectRoot)\kudu.sln" 
+        <MSBuild Projects="$(ProjectRoot)\kudu.sln"
                  Targets="Build"
                  Properties="Configuration=$(Configuration);RunCodeAnalysis=true;CodeAnalysisAdditionalOptions=/assemblyCompareMode:StrongNameIgnoringVersion" />
     </Target>
-    
+
     <Target Name="ReportFxCopResults" Condition=" '$(TEAMCITY_VERSION)' != '' ">
         <ItemGroup>
             <FxCopOutputItems Include="$(ProjectRoot)\**\*.CodeAnalysisLog.xml" />
         </ItemGroup>
-        <Message Text="##teamcity[importData type='FxCop' path='%(FxCopOutputItems.Identity)']" 
+        <Message Text="##teamcity[importData type='FxCop' path='%(FxCopOutputItems.Identity)']"
                      Condition="@(FxCopOutputItems) != '' "/>
     </Target>
-    
+
      <Target Name="BuildZips">
         <PropertyGroup>
           <SourceDirectory>$(ArtifactsPath)\SiteExtensions</SourceDirectory>
           <ZipTargetPath>$(ArtifactsPath)\zip</ZipTargetPath>
-        </PropertyGroup> 
+        </PropertyGroup>
         <RemoveDir Directories="$(ZipTargetPath)" Condition=" Exists('$(ZipTargetPath)') " />
         <MakeDir Directories="$(ZipTargetPath)" />
         <CreateZipFileFromDirectory
@@ -135,7 +135,7 @@
           </Code>
         </Task>
       </UsingTask>
-      
+
       <Target Name="BuildNuget" Condition="'$(BUILD_NUMBER)' != ''">
         <PropertyGroup>
           <SourceDirectory>$(ArtifactsPath)\SiteExtensions\Kudu</SourceDirectory>
@@ -153,5 +153,5 @@
         </ItemGroup>
         <Copy SourceFiles="%(SymbolFilesToCopy.FullPath)" DestinationFiles="$(ArtifactsPath)\symbols\%(Filename)%(Extension)" SkipUnchangedFiles="true" />
       </Target>
-      
+
 </Project>
