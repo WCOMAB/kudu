@@ -19,6 +19,10 @@ var testResultsPath = artifactsPath.Combine("TestResults");
 var commitSha       = GitLogTip("./").Sha;
 var commitTxtPath   = MakeAbsolute(File("./Kudu.Services.Web/commit.txt"));
 var buildNumber     = (AppVeyor.IsRunningOnAppVeyor) ? AppVeyor.Environment.Build.Number.ToString() : "";
+if (buildNumber.Length > 3)
+{
+    buildNumber = buildNumber.SubString(buildNumber.Length-3).TrimStart('0');
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // SETUP / TEARDOWN
@@ -27,7 +31,7 @@ var buildNumber     = (AppVeyor.IsRunningOnAppVeyor) ? AppVeyor.Environment.Buil
 Setup(() =>
 {
     // Executed BEFORE the first task.
-    Information("Running tasks...");
+    Information("Running tasks {0}...", buildNumber);
 });
 
 Teardown(() =>
