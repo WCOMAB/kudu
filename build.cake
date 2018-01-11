@@ -1,4 +1,4 @@
-#addin "nuget:https://www.myget.org/F/wcomab/api/v2?package=Cake.Git&prerelease"
+#addin "nuget:?package=Cake.Git&version=0.16.1"
 ///////////////////////////////////////////////////////////////////////////////
 // ARGUMENTS
 ///////////////////////////////////////////////////////////////////////////////
@@ -21,20 +21,20 @@ var commitTxtPath   = MakeAbsolute(File("./Kudu.Services.Web/commit.txt"));
 var buildNumber     = (AppVeyor.IsRunningOnAppVeyor) ? AppVeyor.Environment.Build.Number.ToString() : "";
 if (buildNumber.Length > 3)
 {
-    buildNumber = buildNumber.SubString(buildNumber.Length-3).TrimStart('0');
+    buildNumber = buildNumber.Substring(buildNumber.Length-3).TrimStart('0');
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // SETUP / TEARDOWN
 ///////////////////////////////////////////////////////////////////////////////
 
-Setup(() =>
+Setup(ctx =>
 {
     // Executed BEFORE the first task.
     Information("Running tasks {0}...", buildNumber);
 });
 
-Teardown(() =>
+Teardown(ctx =>
 {
     // Executed AFTER the last task.
     Information("Finished running tasks.");
